@@ -1,37 +1,39 @@
-@file:Suppress("DEPRECATION")
-
 package com.example.threadrunnable
 
 import android.annotation.SuppressLint
-import android.os.AsyncTask
-import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+import android.os.Handler
+import android.os.Message
 import com.example.threadrunnable.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
+    private lateinit var mHandler: Handler
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        mHandler = MyHandler()
         binding.button.setOnClickListener {
-            Worker().execute()
+            Thread {
+                killSomeTime()
+            }.start()
         }
     }
-    @SuppressLint("StaticFieldLeak")
-    inner class Worker : AsyncTask<Void, String, Boolean>() {
-        override fun doInBackground(vararg p0: Void?): Boolean {
-            for (i in 1..20) {
-                publishProgress(i.toString())
-                Thread.sleep(2000)
-            }
-            return true
+    @SuppressLint("HandlerLeak")
+    inner class MyHandler : Handler() {
+        override fun handleMessage(msg: Message) {
+            binding.textView.text = msg.data?.getString("counter")
         }
-        override fun onProgressUpdate(vararg values: String?) {
-            binding.textView.text = values[0]
-        }
-        override fun onPostExecute(result: Boolean?) {
-            println(result)
+    }
+    private fun killSomeTime() {
+        for (i in 1..20) {
+            val msg = Message.obtain()
+            msg.data.putString("counter", i.toString())
+            mHandler.sendMessage(msg)
+            Thread.sleep(2000)
+            println("i: $i")
         }
     }
 }
